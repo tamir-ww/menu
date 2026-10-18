@@ -7,7 +7,8 @@
   const DEF = { phone: '054-3003138', hours: [['א׳–ה׳', '10:00–21:00'], ['ו׳', '09:00–15:00'], ['מוצ״ש', '20:00–22:30']], ann: '' };
   const S = { menu: null, products: [], reviews: [], deals: [], settings: DEF,
     f: { q: '', cat: 'all', types: [], mk: [], prof: [], tags: [], min: '', max: '', sale: false, review: false, mini: false, deal: false, fresh: false },
-    rx: store.get('ww-rx') || '', sort: store.get('ww-sort') || 'pa', group: store.get('ww-group') || 'deals' };
+    rx: store.get('ww-rx') || '', sort: store.get('ww-sort') || 'pa', group: store.get('ww-group') || 'deals',
+    view: store.get('ww-view') || (matchMedia('(max-width: 700px)').matches ? 'list' : 'cards'), col: new Set() };
   const hash = s => { let h = 5381; for (const c of s) h = (h * 33 + c.charCodeAt(0)) >>> 0; return h.toString(36) };
   const byId = id => S.products.find(p => p.id === id);
   const revOf = p => p && S.reviews.find(r => r.key === p.key);
@@ -65,6 +66,19 @@
     </a>`;
   }
 
+  /* compact row: about three times more products per screen than the cards */
+  function row(p, sec) {
+    const rv = revOf(p), onSale = p.sale && p.sale < p.price, src = imgSrc(p);
+    const deals = p.deals.filter(d => d !== 'מוזלים עד ₪150' && d !== sec), low = p.low || (p.stock != null && p.stock <= LOW);
+    return `<a class="row" href="#${p.id}" aria-label="${esc(p.name)}, ${TYPE[p.type] || ''}, ${prof(p)}, ${nis(p.sale ?? p.price)}">
+      <span class="ri" style="${src ? `background-image:url(${src})` : ''}"><span class="dot dot-${p.type}"></span></span>
+      <span class="rn"><b>${esc(p.name)}</b>${p.strain || p.en ? ` <small ${p.strain ? '' : 'dir="ltr"'}>${esc(p.strain || p.en)}</small>` : ''}</span>
+      <span class="rm"><span class="thc num" dir="ltr">${prof(p)}</span><span class="rty">${TYPE[p.type] || ''}</span><span class="rco">${esc(p.marketer)}</span>${rv ? `<span class="rvp" data-play="1" title="ביקורת וידאו">${ico('play')}${rv.p.score != null ? `<b class="num">${rv.p.score}</b>` : ''}</span>` : ''}${deals.length ? `<span class="tag tag-deal" title="${esc(deals.join(', '))}">${ico('gift')}${esc(deals[0])}${deals.length > 1 ? ' +' + (deals.length - 1) : ''}</span>` : ''}${isNew(p) ? '<span class="tag tag-new">חדש</span>' : isBack(p) ? '<span class="tag tag-new">חזר</span>' : ''}${low ? '<span class="tag tag-low">אחרונים</span>' : ''}</span>
+      <span class="rp"><b class="num ${onSale ? 's' : ''}">${nis(p.sale ?? p.price)}</b>${onSale ? `<del class="num">${nis(p.price)}</del>` : ''}</span>
+    </a>`;
+  }
+  const items = (l, sec) => S.view === 'list' ? `<div class="rows">${l.map(p => row(p, sec)).join('')}</div>` : `<div class="grid">${l.map(card).join('')}</div>`;
+
   function filtersHTML() {
     const base = visible(), f = S.f;
     const cnt = (skip, fn) => { const l = apply(base, skip); return k => l.filter(p => fn(p) === k).length };
@@ -87,10 +101,14 @@
     ${activeCount() ? '<button class="linkbtn" type="button" data-clear>ניקוי כל הסינונים</button>' : ''}`;
   }
   const range = l => { const ps = l.map(p => p.sale ?? p.price); const a = Math.min(...ps), b = Math.max(...ps); return a === b ? nis(a) : `${nis(a)}–${nis(b)}` };
-  const section = (icon, title, sub, l) => `<div class="sec"><div class="sech">${ico(icon)}<h2>${esc(title)}</h2><span class="num">${sub}</span></div><div class="grid">${l.map(card).join('')}</div></div>`;
+  let secs = [];
+  const section = (icon, title, sub, l) => { const i = secs.length, c = S.col.has(title); secs.push([title, l.length]);
+    return `<div class="sec${c ? ' closed' : ''}" id="sec${i}"><div class="sech" data-sec="${esc(title)}">${ico(icon)}<h2>${esc(title)}</h2><span class="num">${sub}</span><button class="chev" type="button" aria-expanded="${!c}" aria-label="${c ? 'פתיחת' : 'כיווץ'} הקבוצה ${esc(title)}"></button></div>${c ? '' : items(l, title)}</div>` };
+  const jumpBar = () => secs.length < 3 ? '' : `<nav class="jump" aria-label="קפיצה לקבוצה"><div class="scroll">${secs.map(([t, n], i) => `<button class="chip" type="button" data-jump="${i}">${esc(t.replace('ללא מבצע כמות · ', ''))} <span class="c num">${n}</span></button>`).join('')}</div><button class="linkbtn" type="button" data-colall>${S.col.size ? 'פתיחת הכל' : 'כיווץ הכל'}</button></nav>`;
   function grouped(list) {
     const srt = l => [...l].sort(SORTS[S.sort][1]);
-    if (S.group === 'none') return `<div class="grid">${srt(list).map(card).join('')}</div>`;
+    secs = [];
+    if (S.group === 'none') return items(srt(list));
     let out = '';
     if (S.group === 'company') {
       const m = new Map(); list.forEach(p => { if (!m.has(p.marketer)) m.set(p.marketer, []); m.get(p.marketer).push(p) });
@@ -140,11 +158,12 @@
             <label class="search">${ico('search')}<span class="sr">חיפוש</span><input id="q" type="search" placeholder="חיפוש בעברית או באנגלית: שם, זן, חברה..." value="${esc(f.q)}" autocomplete="off"></label>
             <button class="fbtn" type="button" id="openF">${ico('filter')}סינון${activeCount() ? `<span class="n num">${activeCount()}</span>` : ''}</button>
             <select class="sel" id="sort" aria-label="מיון">${Object.entries(SORTS).map(([k, [l]]) => `<option value="${k}" ${S.sort === k ? 'selected' : ''}>מיון: ${l}</option>`).join('')}</select>
+            <span class="seg" role="group" aria-label="תצוגה"><button type="button" data-view="cards" aria-pressed="${S.view === 'cards'}" title="כרטיסים">${ico('grid')}<span class="vl">כרטיסים</span></button><button type="button" data-view="list" aria-pressed="${S.view === 'list'}" title="רשימה צפופה">${ico('rows')}<span class="vl">רשימה</span></button></span>
             <span class="seg" role="group" aria-label="קיבוץ">${Object.entries(GROUPS).map(([k, [l, i]]) => `<button type="button" data-group="${k}" aria-pressed="${S.group === k}">${ico(i)}${l}</button>`).join('')}</span>
           </div>
           ${chips.length ? `<div class="active">${chips.map(([k, v, l]) => `<button class="chip" type="button" data-rm="${k}" data-v="${esc(v)}">${esc(l)} ${ico('close')}</button>`).join('')}</div>` : ''}
           <div class="count" aria-live="polite"><b class="num">${list.length}</b> מוצרים · <span class="sorthint">${GROUPS[S.group][0]}, ובכל קבוצה ${SORTS[S.sort][0].replace(':', '')}</span></div>
-          ${list.length ? grouped(list) : `<div class="empty"><b>לא נמצאו מוצרים</b>נסו להסיר חלק מהסינונים או לחפש מילה אחרת.<br><br><button class="btn btn-sm btn-2" type="button" data-clear>ניקוי הסינונים</button></div>`}
+          ${list.length ? (h => jumpBar() + h)(grouped(list)) : `<div class="empty"><b>לא נמצאו מוצרים</b>נסו להסיר חלק מהסינונים או לחפש מילה אחרת.<br><br><button class="btn btn-sm btn-2" type="button" data-clear>ניקוי הסינונים</button></div>`}
         </section>
       </div>
     </div>`;
@@ -227,7 +246,11 @@
     if (t.closest('[data-mkall]')) { S.f.mk = []; rerender(); return }
     const pr = t.closest('[data-pr]'); if (pr) { const [a, b] = pr.dataset.pr.split('|'); if (S.f.min === a && S.f.max === b) { S.f.min = ''; S.f.max = '' } else { S.f.min = a; S.f.max = b } rerender(true); return }
     const ct = t.closest('[data-cat]'); if (ct) { S.f.cat = ct.dataset.cat; rerender(); return }
-    const gr = t.closest('[data-group]'); if (gr) { S.group = gr.dataset.group; store.set('ww-group', S.group); rerender(); return }
+    const gr = t.closest('[data-group]'); if (gr) { S.group = gr.dataset.group; S.col.clear(); store.set('ww-group', S.group); rerender(); return }
+    const vw = t.closest('[data-view]'); if (vw) { S.view = vw.dataset.view; store.set('ww-view', S.view); rerender(); return }
+    const sc = t.closest('[data-sec]'); if (sc) { const k = sc.dataset.sec; S.col.has(k) ? S.col.delete(k) : S.col.add(k); rerender(); return }
+    const jp = t.closest('[data-jump]'); if (jp) { const k = secs[+jp.dataset.jump]; if (k && S.col.has(k[0])) { S.col.delete(k[0]); rerender() } const el = $('#sec' + jp.dataset.jump); if (el) { const y = el.getBoundingClientRect().top + scrollY - (($('.top') || {}).offsetHeight || 64) - (($('.jump') || {}).offsetHeight || 0) - 8; scrollTo({ top: y, behavior: 'smooth' }) } return }
+    if (t.closest('[data-colall]')) { if (S.col.size) S.col.clear(); else secs.forEach(([k]) => S.col.add(k)); rerender(); return }
     const rm = t.closest('[data-rm]'); if (rm) { const k = rm.dataset.rm, v = rm.dataset.v; if (k === 'cat') S.f.cat = 'all'; else if (k === 'price') { S.f.min = ''; S.f.max = '' } else if (k === 't') S.f[v] = false; else S.f[k] = S.f[k].filter(x => x !== v); rerender(); return }
     if (t.closest('[data-clear]')) { S.f = { q: '', cat: 'all', types: [], mk: [], prof: [], tags: [], min: '', max: '', sale: false, review: false, mini: false, deal: false, fresh: false }; rerender(true); return }
     const rx = t.closest('[data-rx]'); if (rx) { if (rx.dataset.rx === 'clear') { setRx(''); rerender() } else rxDlg(); return }
