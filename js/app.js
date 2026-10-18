@@ -5,7 +5,7 @@
   const LOW = 2, PREVIEW = /[?&]preview=1/.test(location.search), EMBED = /[?&]embed=1/.test(location.search);
   document.documentElement.setAttribute('dir', 'rtl'); document.documentElement.setAttribute('lang', 'he');
   const DEF = { phone: '054-3003138', hours: [['א׳–ה׳', '10:00–21:00'], ['ו׳', '09:00–15:00'], ['מוצ״ש', '20:00–22:30']], ann: '' };
-  const S = { menu: null, products: [], reviews: [], deals: [], settings: DEF,
+  const S = { menu: null, products: [], reviews: [], deals: [], settings: DEF, revOn: true,
     f: { q: '', cat: 'all', types: [], mk: [], prof: [], tags: [], min: '', max: '', sale: false, review: false, mini: false, deal: false, fresh: false },
     rx: store.get('ww-rx') || '', sort: store.get('ww-sort') || 'pa', group: store.get('ww-group') || 'deals',
     view: store.get('ww-view') || (matchMedia('(max-width: 700px)').matches ? 'list' : 'cards'), col: new Set() };
@@ -87,14 +87,14 @@
     const profs = [...new Set(base.map(prof))].filter(Boolean).sort(profSort);
     return `
     <div class="fgroup"><h3>סוג</h3><div class="chips">${['indica', 'sativa', 'hybrid'].map(t => `<button class="chip" type="button" data-f="types" data-v="${t}" aria-pressed="${f.types.includes(t)}"><span class="dot dot-${t}"></span>${TYPE[t]} <span class="c num">${tc(t)}</span></button>`).join('')}</div></div>
-    ${anyTag ? `<div class="fgroup"><h3>חוויה ושימוש</h3><div class="chips">${TAGS.filter(t => tgc(t) || f.tags.includes(t)).map(t => `<button class="chip" type="button" data-f="tags" data-v="${t}" aria-pressed="${f.tags.includes(t)}">${t} <span class="c num">${tgc(t)}</span></button>`).join('')}</div><p class="lvl" style="margin:6px 0 0">לפי חוויות שדווחו בביקורות ועל ידי הרוקחים. לא המלצה רפואית.</p></div>` : ''}
+    ${anyTag ? `<div class="fgroup"><h3>חוויה ושימוש</h3><div class="chips">${TAGS.filter(t => tgc(t) || f.tags.includes(t)).map(t => `<button class="chip" type="button" data-f="tags" data-v="${t}" aria-pressed="${f.tags.includes(t)}">${t} <span class="c num">${tgc(t)}</span></button>`).join('')}</div><p class="lvl" style="margin:6px 0 0">לפי חוויות שדווחו ${S.revOn ? 'בביקורות ועל ידי הרוקחים' : 'על ידי הרוקחים'}. לא המלצה רפואית.</p></div>` : ''}
     ${S.rx ? '' : `<div class="fgroup"><h3>יחס THC / CBD</h3><div class="chips">${profs.filter(v => pc(v) || f.prof.includes(v)).map(v => `<button class="chip num" type="button" data-f="prof" data-v="${v}" aria-pressed="${f.prof.includes(v)}" dir="ltr">${v} <span class="c">${pc(v)}</span></button>`).join('')}</div></div>`}
     <div class="fgroup"><h3>מחיר (₪)</h3><div class="range"><input id="fmin" inputmode="numeric" placeholder="מ-" value="${esc(f.min)}" aria-label="מחיר מינימלי"><span>–</span><input id="fmax" inputmode="numeric" placeholder="עד" value="${esc(f.max)}" aria-label="מחיר מקסימלי"></div>
       <div class="chips" style="margin-top:8px">${[['', '150', 'עד 150'], ['150', '250', '150–250'], ['250', '350', '250–350'], ['350', '', '350+']].map(([a, b, l]) => `<button class="chip num" type="button" data-pr="${a}|${b}" aria-pressed="${f.min === a && f.max === b}">${l}</button>`).join('')}</div></div>
     <div class="fgroup">
       <label class="toggle">רק מוצרים במבצע<input type="checkbox" id="t-sale" data-t="sale" ${f.sale ? 'checked' : ''}></label>
       <label class="toggle">מבצעי כמות (2+1, 3 ב-...)<input type="checkbox" id="t-deal" data-t="deal" ${f.deal ? 'checked' : ''}></label>
-      <label class="toggle">יש ביקורת וידאו<input type="checkbox" id="t-review" data-t="review" ${f.review ? 'checked' : ''}></label>
+      ${S.revOn ? `<label class="toggle">יש ביקורת וידאו<input type="checkbox" id="t-review" data-t="review" ${f.review ? 'checked' : ''}></label>` : ''}
       <label class="toggle">חדשים וחזרו למלאי<input type="checkbox" id="t-fresh" data-t="fresh" ${f.fresh ? 'checked' : ''}></label>
       <label class="toggle">מיני / סמול בלבד<input type="checkbox" id="t-mini" data-t="mini" ${f.mini ? 'checked' : ''}></label>
     </div>
@@ -133,7 +133,7 @@
   const QUICK = [['fresh', 'חדשים וחזרו', 'star'], ['review', 'עם ביקורת וידאו', 'play'], ['deal', 'מבצעי כמות', 'gift']];
   function quick(base) {
     const n = k => { const o = S.f[k]; S.f[k] = true; const c = apply(base).length; S.f[k] = o; return c };
-    const h = QUICK.map(([k, l, i]) => [k, l, i, n(k)]).filter(x => x[3] || S.f[x[0]]);
+    const h = QUICK.filter(([k]) => S.revOn || k !== 'review').map(([k, l, i]) => [k, l, i, n(k)]).filter(x => x[3] || S.f[x[0]]);
     return h.length ? `${h.map(([k, l, i, c]) => `<button class="chip qf" type="button" data-qf="${k}" aria-pressed="${!!S.f[k]}">${ico(i)}${l} <span class="c num">${c}</span></button>`).join('')}` : '';
   }
   /* new and back-in-stock products as a row of small cards above the menu */
@@ -176,7 +176,7 @@
           <div class="tools">
             <label class="search">${ico('search')}<span class="sr">חיפוש</span><input id="q" type="search" placeholder="חיפוש בעברית או באנגלית: שם, זן, חברה..." value="${esc(f.q)}" autocomplete="off"></label>
             <button class="fbtn" type="button" id="openF">${ico('filter')}סינון${activeCount() ? `<span class="n num">${activeCount()}</span>` : ''}</button>
-            <select class="sel" id="sort" aria-label="מיון">${Object.entries(SORTS).map(([k, [l]]) => `<option value="${k}" ${S.sort === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
+            <select class="sel" id="sort" aria-label="מיון">${Object.entries(SORTS).filter(([k]) => S.revOn || k !== 'rev').map(([k, [l]]) => `<option value="${k}" ${S.sort === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
             <span class="seg vw" role="group" aria-label="תצוגה"><button type="button" data-view="cards" aria-pressed="${S.view === 'cards'}" title="כרטיסים">${ico('grid')}<span class="vl">כרטיסים</span></button><button type="button" data-view="list" aria-pressed="${S.view === 'list'}" title="רשימה צפופה">${ico('rows')}<span class="vl">רשימה</span></button></span>
             <span class="seg" role="group" aria-label="קיבוץ">${Object.entries(GROUPS).map(([k, [l, i]]) => `<button type="button" data-group="${k}" aria-pressed="${S.group === k}">${ico(i)}${l}</button>`).join('')}</span>
           </div>
@@ -265,8 +265,8 @@
     if (!S.menu) return;
     const h = location.hash.replace('#', '') || 'menu';
     if (/^p[0-9a-z]+$/.test(h) && byId(h)) { if (!$('#main').innerHTML.trim()) renderMenu(); openProduct(h, S.wantPlay); S.wantPlay = false; return }
-    if (/^r-/.test(h)) { if (!$('#main').innerHTML.trim()) renderReviews(); openReview(h.slice(2)); return }
-    const r = h === 'reviews' ? 'reviews' : 'menu'; S.last = '#' + r;
+    if (/^r-/.test(h) && S.revOn) { if (!$('#main').innerHTML.trim()) renderReviews(); openReview(h.slice(2)); return }
+    const r = h === 'reviews' && S.revOn ? 'reviews' : 'menu'; S.last = '#' + r;
     $$('.nav a').forEach(a => a.dataset.r === r ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current'));
     (r === 'menu' ? renderMenu : renderReviews)();
     if (!soft) scrollTo(0, 0);
@@ -323,7 +323,12 @@
   function start(menu, reviews) {
       S.menu = menu; S.deals = menu.deals || []; S.settings = { ...DEF, ...(menu.settings || {}) };
       S.products = menu.products.map(p => ({ ...p, id: 'p' + hash(p.key), tags: p.tags || [], deals: p.deals || [] }));
-      S.reviews = (reviews.reviews || []).map(r => ({ ...r, p: parseReview(r.raw) }));
+      /* video reviews can be switched off in the admin page (settings.reviews === false): then nothing about them is shown */
+      S.revOn = (menu.settings || {}).reviews !== false;
+      S.reviews = S.revOn ? ((reviews && reviews.reviews) || []).map(r => ({ ...r, p: parseReview(r.raw) })) : [];
+      if (!S.revOn) { S.f.review = false; if (S.sort === 'rev') S.sort = 'pa' }
+      $$('[data-rev]').forEach(e => e.hidden = !S.revOn);
+      const gt = $('#gateTxt'); if (gt) gt.textContent = `כדי לצפות במחירים${S.revOn ? ', במבצעים ובביקורות' : ' ובמבצעים'} יש לאשר שיש לך רישיון בתוקף ממשרד הבריאות ומרשם פעיל.`;
       if (!SORTS[S.sort]) S.sort = 'pa'; if (!GROUPS[S.group]) S.group = 'deals';
       chrome(); if (!EMBED) gate(); route();
   }

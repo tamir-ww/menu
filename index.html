@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>תפריט White Wolf</title>
-<meta name="description" content="התפריט המעודכן של White Wolf AI Pharmacy: מחירים, מבצעים וביקורות וידאו על הזנים.">
+<meta name="description" content="התפריט המעודכן של White Wolf AI Pharmacy: מחירים ומבצעים מעודכנים.">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#041223">
 <meta property="og:type" content="website">
 <meta property="og:title" content="תפריט White Wolf · מתעדכן כל יום">
-<meta property="og:description" content="מחירים, מבצעים וביקורות וידאו על הזנים. לבעלי רישיון לקנאביס רפואי בלבד.">
-<meta property="og:image" content="https://tamir-ww.github.io/menu/media/og.jpg">
+<meta property="og:description" content="מחירים ומבצעים מעודכנים. לבעלי רישיון לקנאביס רפואי בלבד.">
+<meta property="og:image" content="https://tamir-ww.github.io/menu/media/og-menu.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:url" content="https://tamir-ww.github.io/menu/">
@@ -28,7 +28,7 @@
     <div class="t">
       <img class="w" src="media/wordmark-reverse.png" alt="White Wolf AI Pharmacy">
       <h1>התפריט מיועד לבעלי רישיון לקנאביס רפואי</h1>
-      <p>כדי לצפות במחירים, במבצעים ובביקורות יש לאשר שיש לך רישיון בתוקף ממשרד הבריאות ומרשם פעיל.</p>
+      <p id="gateTxt">כדי לצפות במחירים ובמבצעים יש לאשר שיש לך רישיון בתוקף ממשרד הבריאות ומרשם פעיל.</p>
       <div class="rxsel"><label for="gRx">הקטגוריה שבמרשם שלך (לא חובה)</label><select id="gRx"><option value="">הצגת כל המוצרים</option></select></div>
       <button class="btn" id="gateOk" type="button">יש לי רישיון בתוקף, כניסה</button>
       <button class="no" id="gateNo" type="button">אין לי רישיון</button>
@@ -40,7 +40,7 @@
 <header class="top">
   <div class="wrap">
     <a class="logo" href="#menu" aria-label="White Wolf, לתפריט"><img src="media/wordmark-reverse.png" alt="White Wolf AI Pharmacy"></a>
-    <nav class="nav" aria-label="ניווט ראשי"><a href="#menu" data-r="menu">תפריט</a><a href="#reviews" data-r="reviews">ביקורות</a></nav>
+    <nav class="nav" aria-label="ניווט ראשי"><a href="#menu" data-r="menu">תפריט</a><a href="#reviews" data-r="reviews" data-rev hidden>ביקורות</a></nav>
   </div>
   <div class="rail"></div>
 </header>
@@ -56,7 +56,7 @@
   <div class="wrap">
     <div><h4>White Wolf AI Pharmacy</h4><p>הקדר 3, נתניה</p><p>טלפון: <span class="num" dir="ltr" data-phone>054-3003138</span><button class="copy" type="button" data-copy>העתקה</button></p><p>משלוחים לכל הארץ</p></div>
     <div><h4>שעות פתיחה</h4><div id="fHours"></div></div>
-    <div><h4>ביקורות הקהילה</h4><div class="fpart"><img src="media/forum-central.jpg" alt="פורום המטופלים המרכזי"><img src="media/forum-neon.jpg" alt="מטופלים למען מטופלים"></div><p>בשיתוף פורום המטופלים המרכזי ו"מטופלים למען מטופלים"</p></div>
+    <div data-rev hidden><h4>ביקורות הקהילה</h4><div class="fpart"><img src="media/forum-central.jpg" alt="פורום המטופלים המרכזי"><img src="media/forum-neon.jpg" alt="מטופלים למען מטופלים"></div><p>בשיתוף פורום המטופלים המרכזי ו"מטופלים למען מטופלים"</p></div>
     <p class="legal">אין באמור להוות פרסום ו/או עידוד לשימוש בקנאביס רפואי המותר לבעלי רשיון המתאים ומרשם בתוקף בלבד. אין במידע זה תחליף להיוועצות עם רופא או רוקח. בטרם רכישת תכשיר רפואי והתחלת הטיפול בו, יש לעיין בעלון לצרכן. מומלץ להתייעץ עם רוקח בכל הנוגע למטרות ואופן השימוש, תופעות לוואי ואינטראקציה עם תכשירים רפואיים אחרים. מבצעים עד גמר המלאי ו/או תאריך סיום ונתונים לשינוי וביטול בכל שלב ולבחירת בית המרקחת.</p>
   </div>
 </footer>
