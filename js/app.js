@@ -181,7 +181,7 @@
             <span class="seg" role="group" aria-label="קיבוץ">${Object.entries(GROUPS).map(([k, [l, i]]) => `<button type="button" data-group="${k}" aria-pressed="${S.group === k}">${ico(i)}${l}</button>`).join('')}</span>
           </div>
           </div>
-          ${chips.length ? `<div class="active">${chips.map(([k, v, l]) => `<button class="chip ac-${k}" type="button" data-rm="${k}" data-v="${esc(v)}">${esc(l)} ${ico('close')}</button>`).join('')}</div>` : ''}
+          ${chips.length || f.q ? `<div class="active">${chips.map(([k, v, l]) => `<button class="chip ac-${k}" type="button" data-rm="${k}" data-v="${esc(v)}">${esc(l)} ${ico('close')}</button>`).join('')}${chips.length + !!f.q > 1 || (f.q && !chips.length) ? `<button class="clearall" type="button" data-clear>${ico('close')}ניקוי הכל</button>` : ''}</div>` : ''}
           <div class="count" aria-live="polite"><b class="num">${list.length}</b> מוצרים · <span class="sorthint">${GROUPS[S.group][0]}, ובכל קבוצה ${SORTS[S.sort][0].replace(':', '')}</span><span class="legend" aria-hidden="true">${['indica', 'sativa', 'hybrid'].map(t => `<i class="dot dot-${t}"></i>${TYPE[t]}`).join('')}</span></div>
           ${list.length ? (h => jumpBar() + h)(grouped(list)) : `<div class="empty"><b>לא נמצאו מוצרים</b>נסו להסיר חלק מהסינונים או לחפש מילה אחרת.<br><br><button class="btn btn-sm btn-2" type="button" data-clear>ניקוי הסינונים</button></div>`}
         </section>

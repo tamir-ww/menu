@@ -603,6 +603,9 @@ main{padding-bottom:84px}}
 .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
 .pg{display:flex;flex-direction:column;gap:6px;text-decoration:none;color:var(--ink-2);font-size:13px}
 .pg img{width:100%;border:1px solid var(--line-2);box-shadow:0 4px 16px rgba(1,32,78,.12);background:#fff}
+.active .clearall{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--dl-line);background:transparent;color:var(--dl-ink);font-weight:800;font-size:13px;padding:4px 12px;border-radius:var(--r-pill);margin-inline-start:4px}
+.active .clearall .ico{width:13px;height:13px}
+.active .clearall:hover{background:var(--dl-tint)}
 
 
 body{margin:0}img{max-width:100%}
