@@ -70,6 +70,19 @@ const WW = (function () {
       ${r.bottom ? `<div class="bottom"><h4>שורה תחתונה</h4><p>${esc(r.bottom)}</p>${r.verdict ? `<p class="vd">${esc(r.verdict)}</p>` : ''}</div>` : ''}
     </div>`;
   }
+  /* what a bulk deal works out to per unit, from the prices of the products in it */
+  function dealNote(d, l) {
+    const ps = (l || []).map(p => p.sale ?? p.price).filter(Boolean); if (!ps.length) return '';
+    const lo = Math.min(...ps), hi = Math.max(...ps), rng = lo === hi ? nis(lo) : `${nis(lo)}–${nis(hi)}`;
+    let m = d.match(/^(\d+|זוג)\s*ב-?\s*₪?\s*([\d,]+)/);
+    if (m) { const n = m[1] === 'זוג' ? 2 : +m[1], tot = +m[2].replace(/,/g, ''), u = Math.round(tot / n); if (!n || !tot) return ''; return hi > u ? `${nis(u)} ליחידה במקום ${rng}${lo === hi ? ` · חיסכון ${nis(lo * n - tot)}` : ''}` : `${nis(u)} ליחידה` }
+    m = d.match(/^(\d+)\s*\+\s*(\d+)/);
+    if (m) { const pay = +m[1], get = pay + +m[2]; return `${get} במחיר ${pay} · יוצא ${lo === hi ? nis(Math.round(lo * pay / get)) + ' ליחידה' : `${Math.round((1 - pay / get) * 100)}% הנחה`}` }
+    m = d.match(/קנה\s*(\d+).*?(\d+)/);
+    if (m) { const pay = +m[1], get = +m[2]; if (get > pay) return `${get} במחיר ${pay} · כ-${Math.round((1 - pay / get) * 100)}% הנחה, הזול במתנה` }
+    m = d.match(/עד\s*₪?\s*(\d+)/); if (m) return `מחירים ${rng}`;
+    return '';
+  }
   let tt; function toast(m) { let t = document.querySelector('.toast'); if (!t) { t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t) } t.textContent = m; clearTimeout(tt); tt = setTimeout(() => t.remove(), 3600) }
-  return { esc, ico, store, TYPE, CAT, TAGS, DAY, nis, prof, profSort, pot, today, isNew, isBack, imgSrc, norm, keyOf, parseReview, suggestTags, reviewHTML, toast };
+  return { esc, ico, store, TYPE, CAT, TAGS, DAY, nis, prof, profSort, pot, today, isNew, isBack, imgSrc, norm, keyOf, parseReview, suggestTags, reviewHTML, dealNote, toast };
 })();

@@ -1,6 +1,6 @@
 /* White Wolf customer menu: view only */
 (function () {
-  const { esc, ico, store, TYPE, CAT, TAGS, nis, prof, profSort, pot, isNew, isBack, imgSrc, parseReview, reviewHTML, toast } = WW;
+  const { esc, ico, store, TYPE, CAT, TAGS, nis, prof, profSort, pot, isNew, isBack, imgSrc, parseReview, reviewHTML, dealNote, toast } = WW;
   const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const LOW = 2, PREVIEW = /[?&]preview=1/.test(location.search), EMBED = /[?&]embed=1/.test(location.search);
   document.documentElement.setAttribute('dir', 'rtl'); document.documentElement.setAttribute('lang', 'he');
@@ -102,8 +102,8 @@
   }
   const range = l => { const ps = l.map(p => p.sale ?? p.price); const a = Math.min(...ps), b = Math.max(...ps); return a === b ? nis(a) : `${nis(a)}–${nis(b)}` };
   let secs = [];
-  const section = (icon, title, sub, l, kind) => { const i = secs.length, c = S.col.has(title); secs.push([title, l.length, kind]);
-    return `<div class="sec sk-${kind}${c ? ' closed' : ''}" id="sec${i}"><div class="sech" data-sec="${esc(title)}">${ico(icon)}<h2>${esc(title)}</h2><span class="num">${sub}</span><button class="chev" type="button" aria-expanded="${!c}" aria-label="${c ? 'פתיחת' : 'כיווץ'} הקבוצה ${esc(title)}"></button></div>${c ? '' : items(l, title)}</div>` };
+  const section = (icon, title, sub, l, kind, note) => { const i = secs.length, c = S.col.has(title); secs.push([title, l.length, kind]);
+    return `<div class="sec sk-${kind}${c ? ' closed' : ''}" id="sec${i}"><div class="sech" data-sec="${esc(title)}">${ico(icon)}<h2>${esc(title)}</h2><span class="num">${sub}</span>${note ? `<span class="dn num">${esc(note)}</span>` : ''}<button class="chev" type="button" aria-expanded="${!c}" aria-label="${c ? 'פתיחת' : 'כיווץ'} הקבוצה ${esc(title)}"></button></div>${c ? '' : items(l, title)}</div>` };
   const JL = { deals: ['gift', 'קפיצה למבצע'], company: ['shield', 'קפיצה לחברה'], type: ['flower', 'קפיצה לסוג'] };
   const jumpBar = () => secs.length < 3 ? '' : `<nav class="jump j-${S.group}" aria-label="קפיצה לקבוצה"><b class="ll">${ico(JL[S.group][0])}<span>${JL[S.group][1]}</span></b><div class="scroll">${secs.map(([t, n, k], i) => `<button class="chip jk-${k}" type="button" data-jump="${i}">${TYPE[k] ? `<i class="dot dot-${k}"></i>` : ''}${esc(t.replace('ללא מבצע כמות · ', ''))} <span class="c num">${n}</span></button>`).join('')}</div><button class="linkbtn" type="button" data-colall>${S.col.size ? 'פתיחת הכל' : 'כיווץ הכל'}</button></nav>`;
   function grouped(list) {
@@ -120,7 +120,7 @@
       const ds = [...new Set(list.flatMap(p => p.deals))].sort((a, b) => { const ia = S.deals.indexOf(a), ib = S.deals.indexOf(b); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) });
       for (const d of ds) {
         const l = list.filter(p => p.deals.includes(d) && !seen.has(p.id)); if (!l.length) continue; l.forEach(p => seen.add(p.id));
-        out += section('gift', d, `${l.length} מוצרים${d.startsWith('קנה 7') ? ' · הזול מביניהם במתנה' : ''}${/^\d|זוג/.test(d) ? ' · אפשר לשלב בין המוצרים בקבוצה' : ''}`, srt(l), 'deal');
+        out += section('gift', d, `${l.length} מוצרים${/^\d|זוג|קנה/.test(d) ? ' · אפשר לשלב בין המוצרים בקבוצה' : ''}`, srt(l), 'deal', dealNote(d, l));
       }
     }
     for (const c of ['flower', 'oil', 'preroll']) for (const t of ['indica', 'sativa', 'hybrid']) {
@@ -135,6 +135,14 @@
     const n = k => { const o = S.f[k]; S.f[k] = true; const c = apply(base).length; S.f[k] = o; return c };
     const h = QUICK.map(([k, l, i]) => [k, l, i, n(k)]).filter(x => x[3] || S.f[x[0]]);
     return h.length ? `${h.map(([k, l, i, c]) => `<button class="chip qf" type="button" data-qf="${k}" aria-pressed="${!!S.f[k]}">${ico(i)}${l} <span class="c num">${c}</span></button>`).join('')}` : '';
+  }
+  /* new and back-in-stock products as a row of small cards above the menu */
+  function freshStrip(list) {
+    if (S.f.fresh) return '';
+    const d = p => Math.max(isNew(p) ? Date.parse(p.firstSeen) : 0, isBack(p) ? Date.parse(p.backAt) : 0);
+    const L = list.filter(p => isNew(p) || isBack(p)).sort((a, b) => d(b) - d(a)).slice(0, 14); if (!L.length) return '';
+    return `<section class="fresh" aria-label="חדש וחזר למלאי"><div class="fh"><h2>${ico('star')}חדש וחזר למלאי</h2><button class="linkbtn" type="button" data-qf="fresh">לכל ${list.filter(p => isNew(p) || isBack(p)).length} המוצרים</button></div>
+      <div class="fs">${L.map(p => { const on = p.sale && p.sale < p.price, src = imgSrc(p); return `<a class="fcard" href="#${p.id}"><span class="im" style="${src ? `background-image:url(${src})` : ''}"><span class="ft ${isNew(p) ? 'n' : 'b'}">${isNew(p) ? 'חדש' : 'חזר למלאי'}</span></span><b>${esc(p.name)}</b><small><i class="dot dot-${p.type}"></i>${TYPE[p.type] || ''} · <span dir="ltr">${prof(p)}</span></small><small>${esc(p.marketer)}</small><span class="fp num ${on ? 's' : ''}">${nis(p.sale ?? p.price)}${on ? ` <del>${nis(p.price)}</del>` : ''}</span></a>` }).join('')}</div></section>`;
   }
   function renderMenu() {
     const base = visible(), list = apply(base), f = S.f;
@@ -154,6 +162,7 @@
         <span class="thumb" style="${rv.poster ? `background-image:url(${esc(rv.poster)})` : ''}">${ico('play')}</span>
         <span style="min-width:0"><span class="eb">ביקורת וידאו${rv.p.author ? ' · ' + esc(rv.p.author) : ''}</span><h2>${esc(rv.p.title)}</h2><p>${esc(rv.p.bottom)}</p></span>
         <span class="score"><b class="num">${rv.p.score ?? '–'}</b><span>מתוך 10</span></span></a>` : ''}
+      ${freshStrip(list)}
       <div class="layout">
         <aside class="filters" aria-label="סינון">${filtersHTML()}</aside>
         <section style="min-width:0">
@@ -178,14 +187,28 @@
         </section>
       </div>
     </div>`;
+    mbar();
     $$('.lane .scroll').forEach(sc => { const on = sc.querySelector('[aria-pressed="true"]'); if (!on || on === sc.firstElementChild) return; const r = on.getBoundingClientRect(), R = sc.getBoundingClientRect(); if (r.left < R.left || r.right > R.right) sc.scrollLeft += (r.left + r.width / 2) - (R.left + R.width / 2) });
   }
 
+  /* phone bottom bar: filters, jump to a group, search, without scrolling back up */
+  function mbar() {
+    let m = $('#mbar'); if (!m) { m = document.createElement('nav'); m.id = 'mbar'; m.className = 'mbar'; m.setAttribute('aria-label', 'קיצורים'); document.body.appendChild(m) }
+    const n = activeCount();
+    m.innerHTML = `<button type="button" id="openF2">${ico('filter')}<span>סינון</span>${n ? `<b class="n num">${n}</b>` : ''}</button>${secs.length > 1 ? `<button type="button" id="openJ">${ico(S.group === 'company' ? 'shield' : 'gift')}<span>${S.group === 'company' ? 'חברות' : S.group === 'deals' ? 'מבצעים' : 'קבוצות'}</span></button>` : ''}<button type="button" id="goQ">${ico('search')}<span>חיפוש</span></button>`;
+    mshow();
+  }
+  function mshow() { const m = $('#mbar'), fp = $('.fpanel'); if (!m) return; const on = !!fp && fp.getBoundingClientRect().bottom < 0 && /^#?(menu)?$/.test(location.hash.replace(/^#$/, '')) && !$('#layer').innerHTML; m.classList.toggle('on', on) }
+  addEventListener('scroll', () => requestAnimationFrame(mshow), { passive: true });
+  function jumpSheet() {
+    sheet(`<div style="padding:20px 20px 24px"><h2 style="margin:0 0 12px;font-size:18px">קפיצה ל${S.group === 'company' ? 'חברה' : S.group === 'deals' ? 'מבצע' : 'קבוצה'}</h2><div class="jlist">${secs.map(([t, n, k], i) => `<button type="button" class="chip jk-${k}" data-jump="${i}">${TYPE[k] ? `<i class="dot dot-${k}"></i>` : ''}${esc(t.replace('ללא מבצע כמות · ', ''))} <span class="c num">${n}</span></button>`).join('')}</div></div>`, 'קפיצה לקבוצה');
+    $('#layer .dlg').classList.add('dlg-sm');
+  }
   function sheet(inner, label) {
     $('#layer').innerHTML = `<div class="ov" data-close><div class="dlg" role="dialog" aria-modal="true" aria-label="${esc(label)}"><button class="x" type="button" data-close aria-label="סגירה">${ico('close')}</button>${inner}</div></div>`;
-    document.body.style.overflow = 'hidden'; const x = $('#layer .x'); x && x.focus();
+    document.body.style.overflow = 'hidden'; const x = $('#layer .x'); x && x.focus(); const mb = $('#mbar'); mb && mb.classList.remove('on');
   }
-  function closeSheet() { const v = $('#layer video'); v && v.pause(); $('#layer').innerHTML = ''; document.body.style.overflow = ''; if (/^#(p|r-)/.test(location.hash)) history.replaceState(null, '', S.last || '#menu') }
+  function closeSheet() { const v = $('#layer video'); v && v.pause(); $('#layer').innerHTML = ''; document.body.style.overflow = ''; if (/^#(p|r-)/.test(location.hash)) history.replaceState(null, '', S.last || '#menu'); mshow() }
   function videoBlock(rv) { return rv.video ? `<div class="vid"><video id="vid" src="${esc(rv.video)}" ${rv.poster ? `poster="${esc(rv.poster)}"` : ''} controls playsinline preload="metadata"></video></div>` : '' }
   function openProduct(id, play) {
     const p = byId(id); if (!p) return;
@@ -262,13 +285,15 @@
     const gr = t.closest('[data-group]'); if (gr) { S.group = gr.dataset.group; S.col.clear(); store.set('ww-group', S.group); rerender(); return }
     const vw = t.closest('[data-view]'); if (vw) { S.view = vw.dataset.view; store.set('ww-view', S.view); rerender(); return }
     const sc = t.closest('[data-sec]'); if (sc) { const k = sc.dataset.sec; S.col.has(k) ? S.col.delete(k) : S.col.add(k); rerender(); return }
-    const jp = t.closest('[data-jump]'); if (jp) { const k = secs[+jp.dataset.jump]; if (k && S.col.has(k[0])) { S.col.delete(k[0]); rerender() } const el = $('#sec' + jp.dataset.jump); if (el) { const y = el.getBoundingClientRect().top + scrollY - (($('.top') || {}).offsetHeight || 64) - (($('.jump') || {}).offsetHeight || 0) - 8; scrollTo({ top: y, behavior: 'smooth' }) } return }
+    const jp = t.closest('[data-jump]'); if (jp) { if (jp.closest('#layer')) closeSheet(); const k = secs[+jp.dataset.jump]; if (k && S.col.has(k[0])) { S.col.delete(k[0]); rerender() } const el = $('#sec' + jp.dataset.jump); if (el) { const y = el.getBoundingClientRect().top + scrollY - (($('.top') || {}).offsetHeight || 64) - (($('.jump') || {}).offsetHeight || 0) - 8; scrollTo({ top: y, behavior: 'smooth' }) } return }
     if (t.closest('[data-colall]')) { if (S.col.size) S.col.clear(); else secs.forEach(([k]) => S.col.add(k)); rerender(); return }
     const rm = t.closest('[data-rm]'); if (rm) { const k = rm.dataset.rm, v = rm.dataset.v; if (k === 'cat') S.f.cat = 'all'; else if (k === 'price') { S.f.min = ''; S.f.max = '' } else if (k === 't') S.f[v] = false; else S.f[k] = S.f[k].filter(x => x !== v); rerender(); return }
     if (t.closest('[data-clear]')) { S.f = { q: '', cat: 'all', types: [], mk: [], prof: [], tags: [], min: '', max: '', sale: false, review: false, mini: false, deal: false, fresh: false }; rerender(true); return }
     const rx = t.closest('[data-rx]'); if (rx) { if (rx.dataset.rx === 'clear') { setRx(''); rerender() } else rxDlg(); return }
     const srx = t.closest('[data-setrx]'); if (srx) { setRx(srx.dataset.setrx); closeSheet(); rerender(); return }
-    if (t.closest('#openF')) { openFilters(); return }
+    if (t.closest('#openF') || t.closest('#openF2')) { openFilters(); return }
+    if (t.closest('#openJ')) { jumpSheet(); return }
+    if (t.closest('#goQ')) { scrollTo({ top: 0, behavior: 'smooth' }); setTimeout(() => { const q = $('#q'); q && q.focus() }, 350); return }
     const cp = t.closest('[data-copy]'); if (cp) { const v = S.settings.phone; (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(() => toast('המספר הועתק')).catch(() => toast(v)); return }
   });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#layer').innerHTML) closeSheet() });
