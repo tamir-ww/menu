@@ -128,6 +128,13 @@
     }
     return out;
   }
+  /* quick filters next to the categories: one tap instead of opening the filter panel */
+  const QUICK = [['fresh', 'חדשים וחזרו', 'star'], ['review', 'עם ביקורת וידאו', 'play'], ['deal', 'מבצעי כמות', 'gift']];
+  function quick(base) {
+    const n = k => { const o = S.f[k]; S.f[k] = true; const c = apply(base).length; S.f[k] = o; return c };
+    const h = QUICK.map(([k, l, i]) => [k, l, i, n(k)]).filter(x => x[3] || S.f[x[0]]);
+    return h.length ? `<span class="qsep" aria-hidden="true"></span>${h.map(([k, l, i, c]) => `<button class="chip qf" type="button" data-qf="${k}" aria-pressed="${!!S.f[k]}">${ico(i)}${l} <span class="c num">${c}</span></button>`).join('')}` : '';
+  }
   function renderMenu() {
     const base = visible(), list = apply(base), f = S.f;
     const cc = apply(base, 'cat'); const cN = k => k === 'all' ? cc.length : cc.filter(p => p.cat === k).length;
@@ -150,7 +157,7 @@
         <aside class="filters" aria-label="סינון">${filtersHTML()}</aside>
         <section style="min-width:0">
           ${S.rx ? `<div class="rx">${ico('shield')}<span>מוצגים רק מוצרים בקטגוריה <b class="num" dir="ltr">${S.rx}</b> שבמרשם שלך (<span class="num">${rxN}</span>)</span><button class="linkbtn" type="button" data-rx="change">שינוי</button><button class="linkbtn" type="button" data-rx="clear">הצגת כל המוצרים</button></div>` : ''}
-          <div class="cats" role="group" aria-label="קטגוריה">${['all', 'flower', 'oil', 'preroll'].filter(k => k === 'all' || cN(k)).map(k => `<button class="chip" type="button" data-cat="${k}" aria-pressed="${f.cat === k}">${k === 'all' ? 'הכל' : CAT[k]} <span class="c num">${cN(k)}</span></button>`).join('')}</div>
+          <div class="cats" role="group" aria-label="קטגוריה וסינון מהיר">${['all', 'flower', 'oil', 'preroll'].filter(k => k === 'all' || cN(k)).map(k => `<button class="chip" type="button" data-cat="${k}" aria-pressed="${f.cat === k}">${k === 'all' ? 'הכל' : CAT[k]} <span class="c num">${cN(k)}</span></button>`).join('')}${quick(base)}</div>
           <div class="cobar"><b>חברה:</b><div class="scroll" role="group" aria-label="חברה">
             <button class="chip" type="button" data-mkall aria-pressed="${!f.mk.length}">כל החברות</button>
             ${companies().map(([m]) => `<button class="chip" type="button" data-f="mk" data-v="${esc(m)}" aria-pressed="${f.mk.includes(m)}">${esc(m)} <span class="c num">${mN(m)}</span></button>`).join('')}</div></div>
@@ -158,7 +165,7 @@
             <label class="search">${ico('search')}<span class="sr">חיפוש</span><input id="q" type="search" placeholder="חיפוש בעברית או באנגלית: שם, זן, חברה..." value="${esc(f.q)}" autocomplete="off"></label>
             <button class="fbtn" type="button" id="openF">${ico('filter')}סינון${activeCount() ? `<span class="n num">${activeCount()}</span>` : ''}</button>
             <select class="sel" id="sort" aria-label="מיון">${Object.entries(SORTS).map(([k, [l]]) => `<option value="${k}" ${S.sort === k ? 'selected' : ''}>מיון: ${l}</option>`).join('')}</select>
-            <span class="seg" role="group" aria-label="תצוגה"><button type="button" data-view="cards" aria-pressed="${S.view === 'cards'}" title="כרטיסים">${ico('grid')}<span class="vl">כרטיסים</span></button><button type="button" data-view="list" aria-pressed="${S.view === 'list'}" title="רשימה צפופה">${ico('rows')}<span class="vl">רשימה</span></button></span>
+            <span class="seg vw" role="group" aria-label="תצוגה"><button type="button" data-view="cards" aria-pressed="${S.view === 'cards'}" title="כרטיסים">${ico('grid')}<span class="vl">כרטיסים</span></button><button type="button" data-view="list" aria-pressed="${S.view === 'list'}" title="רשימה צפופה">${ico('rows')}<span class="vl">רשימה</span></button></span>
             <span class="seg" role="group" aria-label="קיבוץ">${Object.entries(GROUPS).map(([k, [l, i]]) => `<button type="button" data-group="${k}" aria-pressed="${S.group === k}">${ico(i)}${l}</button>`).join('')}</span>
           </div>
           ${chips.length ? `<div class="active">${chips.map(([k, v, l]) => `<button class="chip" type="button" data-rm="${k}" data-v="${esc(v)}">${esc(l)} ${ico('close')}</button>`).join('')}</div>` : ''}
@@ -245,6 +252,7 @@
     const ff = t.closest('[data-f]'); if (ff) { const a = S.f[ff.dataset.f], v = ff.dataset.v, i = a.indexOf(v); i < 0 ? a.push(v) : a.splice(i, 1); rerender(true); return }
     if (t.closest('[data-mkall]')) { S.f.mk = []; rerender(); return }
     const pr = t.closest('[data-pr]'); if (pr) { const [a, b] = pr.dataset.pr.split('|'); if (S.f.min === a && S.f.max === b) { S.f.min = ''; S.f.max = '' } else { S.f.min = a; S.f.max = b } rerender(true); return }
+    const qf = t.closest('[data-qf]'); if (qf) { S.f[qf.dataset.qf] = !S.f[qf.dataset.qf]; rerender(); return }
     const ct = t.closest('[data-cat]'); if (ct) { S.f.cat = ct.dataset.cat; rerender(); return }
     const gr = t.closest('[data-group]'); if (gr) { S.group = gr.dataset.group; S.col.clear(); store.set('ww-group', S.group); rerender(); return }
     const vw = t.closest('[data-view]'); if (vw) { S.view = vw.dataset.view; store.set('ww-view', S.view); rerender(); return }
