@@ -326,7 +326,8 @@
       /* video reviews can be switched off in the admin page (settings.reviews === false): then nothing about them is shown */
       S.revOn = (menu.settings || {}).reviews !== false;
       S.reviews = S.revOn ? ((reviews && reviews.reviews) || []).map(r => ({ ...r, p: parseReview(r.raw) })) : [];
-      if (!S.revOn) { S.f.review = false; if (S.sort === 'rev') S.sort = 'pa' }
+      /* the experience tags come from the reviews, so they go with them */
+      if (!S.revOn) { S.f.review = false; S.f.tags = []; if (S.sort === 'rev') S.sort = 'pa'; S.products.forEach(p => p.tags = []) }
       $$('[data-rev]').forEach(e => e.hidden = !S.revOn);
       const gt = $('#gateTxt'); if (gt) gt.textContent = `כדי לצפות במחירים${S.revOn ? ', במבצעים ובביקורות' : ' ובמבצעים'} יש לאשר שיש לך רישיון בתוקף ממשרד הבריאות ומרשם פעיל.`;
       if (!SORTS[S.sort]) S.sort = 'pa'; if (!GROUPS[S.group]) S.group = 'deals';
