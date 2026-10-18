@@ -12,7 +12,7 @@
   const hash = s => { let h = 5381; for (const c of s) h = (h * 33 + c.charCodeAt(0)) >>> 0; return h.toString(36) };
   const byId = id => S.products.find(p => p.id === id);
   const revOf = p => p && S.reviews.find(r => r.key === p.key);
-  const visible = () => S.products.filter(p => !p.hidden && p.stock !== 0);
+  const visible = () => S.products.filter(p => !p.off && !p.hidden && p.stock !== 0);
   const companies = () => { const m = new Map(); visible().forEach(p => m.set(p.marketer, (m.get(p.marketer) || 0) + 1)); return [...m].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'he')) };
 
   /* transliteration so "pink" finds "פינק" */
@@ -139,7 +139,7 @@
     const base = visible(), list = apply(base), f = S.f;
     const cc = apply(base, 'cat'); const cN = k => k === 'all' ? cc.length : cc.filter(p => p.cat === k).length;
     const mkl = apply(base, 'mk'); const mN = m => mkl.filter(p => p.marketer === m).length;
-    const rv = S.reviews.find(r => S.products.some(p => p.key === r.key && !p.hidden)), rp = rv && S.products.find(p => p.key === rv.key);
+    const rv = S.reviews.find(r => S.products.some(p => p.key === r.key && !p.hidden && !p.off)), rp = rv && S.products.find(p => p.key === rv.key);
     const chips = [];
     if (f.cat !== 'all') chips.push(['cat', f.cat, CAT[f.cat]]);
     f.mk.forEach(v => chips.push(['mk', v, v])); f.types.forEach(v => chips.push(['types', v, TYPE[v]])); f.prof.forEach(v => chips.push(['prof', v, v])); f.tags.forEach(v => chips.push(['tags', v, v]));
@@ -202,7 +202,7 @@
   }
   function openReview(id) {
     const rv = S.reviews.find(r => r.id === id); if (!rv) return;
-    const p = S.products.find(x => x.key === rv.key && !x.hidden);
+    const p = S.products.find(x => x.key === rv.key && !x.hidden && !x.off);
     if (p) return openProduct(p.id, true);
     sheet(`<div class="pd has-r">${videoBlock(rv)}<div class="pbody">${reviewHTML(rv.p, rv.date)}${partners()}<div class="note" style="margin:0">המוצר הזה לא נמצא כרגע בתפריט. אפשר לשאול עליו בבית המרקחת: <span class="num" dir="ltr">${esc(S.settings.phone)}</span></div></div></div>`, rv.p.title);
     const v = $('#vid'); v && v.play().catch(() => { });
@@ -213,7 +213,7 @@
     $('#main').innerHTML = `<section class="rhero"><div class="wrap"><div><div class="eb">ביקורות White Wolf</div><h1>ביקורות וידאו על הזנים</h1><p>חוות דעת אישיות: ריח, טעם, השפעה וציון. ביקורת של מוצר שנמצא בתפריט מקושרת למחיר העדכני.</p>
       <div class="hpart"><img src="media/forum-central.jpg" alt="פורום המטופלים המרכזי"><img src="media/forum-neon.jpg" alt="מטופלים למען מטופלים"><span>בשיתוף פורום המטופלים המרכזי ו"מטופלים למען מטופלים"</span></div></div><img src="media/mascot.jpg" alt=""></div></section>
     <div class="wrap"><div class="rgrid">
-      ${S.reviews.map(rv => { const p = S.products.find(x => x.key === rv.key && !x.hidden); return `<a class="rcard" href="#r-${esc(rv.id)}">
+      ${S.reviews.map(rv => { const p = S.products.find(x => x.key === rv.key && !x.hidden && !x.off); return `<a class="rcard" href="#r-${esc(rv.id)}">
         <span class="po" style="${rv.poster ? `background-image:url(${esc(rv.poster)})` : ''}">${rv.p.score != null ? `<span class="sc num">${rv.p.score}/10</span>` : ''}<span class="pb">${ico('play')}</span></span>
         <span class="bd"><span class="meta" style="margin:0">${p ? `<span class="tp tp-${p.type}">${TYPE[p.type]}</span><span>${esc(p.marketer)}</span><span class="num">${nis(p.sale ?? p.price)}</span>` : '<span class="tag tag-low">כרגע לא במלאי</span>'}</span>
         <h3>${esc(rv.p.title)}</h3><p>${esc(rv.p.bottom)}</p><span class="meta" style="margin:0">${ico('crown')}${rv.p.author ? 'מאת ' + esc(rv.p.author) + ' · ' : ''}${esc(rv.date)}</span></span></a>` }).join('')}

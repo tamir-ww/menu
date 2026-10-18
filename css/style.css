@@ -506,6 +506,16 @@ details.manual .steps{margin-top:14px}
 .cats .qf .ico{width:13px;height:13px}
 .cats .qf[aria-pressed="true"] .ico{color:inherit}
 @media (max-width:600px){.seg.vw{width:auto;flex:none}.seg.vw button .ico{display:inline-block;width:18px;height:18px}.seg.vw .vl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}.seg.vw button{padding:0 12px}.tools .sel{flex:1 1 0;width:0}}
+/* ---- studio: review strain picker ---- */
+.rpick{display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--brand);background:var(--card);padding:10px 12px;font-size:14px}
+.rpick.none{border-style:dashed;border-color:var(--line-2);color:var(--ink-2);font-size:13px}
+.rpick .pill{margin-top:4px}
+.rlist{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.rlist .rhead{color:var(--ink-2);font-size:12.5px;font-weight:600}
+.rlist .sug button{padding:7px 10px;font-size:13.5px}
+.sug button[aria-pressed="true"]{border-color:var(--purple);box-shadow:inset 3px 0 0 var(--purple)}
+.fld .search{flex:none;height:44px;font-weight:400}
+.fld .search input{border:0;padding:0;height:100%;background:none;width:auto;flex:1}
 
 
 body{margin:0}img{max-width:100%}
