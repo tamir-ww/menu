@@ -36,7 +36,7 @@
       if (f.deal && !p.deals.some(d => d !== 'מוזלים עד ₪150')) return false;
       if (f.fresh && !(isNew(p) || isBack(p))) return false;
       if (q) {
-        const h = (p.name + ' ' + p.strain + ' ' + p.marketer + ' ' + TYPE[p.type] + ' ' + CAT[p.cat] + ' ' + prof(p) + ' ' + p.deals.join(' ') + ' ' + (p.tags || []).join(' ')).toLowerCase();
+        const h = (p.name + ' ' + p.strain + ' ' + (p.en || '') + ' ' + p.marketer + ' ' + TYPE[p.type] + ' ' + CAT[p.cat] + ' ' + prof(p) + ' ' + p.deals.join(' ') + ' ' + (p.tags || []).join(' ')).toLowerCase();
         if (!q.split(/\s+/).every(w => h.includes(w))) { if (!latin || qs.length < 2) return false; if (!sk(tl(p.name + ' ' + p.strain)).includes(qs)) return false }
       }
       return true;
@@ -55,7 +55,7 @@
     return `<a class="card" href="#${p.id}" aria-label="${esc(p.name)}, ${nis(p.sale ?? p.price)}">
       <span class="im" style="${src ? `background-image:url(${src})` : ''}">${rv ? `<span class="pl">${ico('play')}</span>` : ''}</span>
       <span style="min-width:0">
-        <span class="nm">${esc(p.name)}</span>${p.strain ? `<span class="st"> · ${esc(p.strain)}</span>` : ''}
+        <span class="nm">${esc(p.name)}</span>${p.strain || p.en ? `<span class="st"> · <span ${p.strain ? '' : 'dir="ltr"'}>${esc(p.strain || p.en)}</span></span>` : ''}
         <span class="meta"><span class="tp tp-${p.type}">${TYPE[p.type] || ''}</span><span class="thc num" dir="ltr">${prof(p)}</span><span>${CAT[p.cat]}</span><span>· <b style="color:var(--ink)">${esc(p.marketer)}</b></span></span>
         <span class="meta">${onSale ? '<span class="tag tag-sale">מבצע</span>' : ''}${deals.map(d => `<span class="tag tag-deal">${ico('gift')}${esc(d)}</span>`).join('')}${isNew(p) ? '<span class="tag tag-new">חדש</span>' : ''}${isBack(p) ? '<span class="tag tag-new">חזר למלאי</span>' : ''}${p.low || (p.stock != null && p.stock <= LOW) ? '<span class="tag tag-low">אחרונים במלאי</span>' : ''}</span>
         ${(p.tags || []).length ? `<span class="meta lvl">${p.tags.map(esc).join(' · ')}</span>` : ''}
@@ -163,12 +163,12 @@
     const same = visible().filter(x => x.id !== p.id && x.marketer === p.marketer).length;
     sheet(`<div class="pd ${rv ? 'has-r' : ''}">${rv ? videoBlock(rv) : ''}
       <div class="pbody">
-        <div class="phero"><span class="im" style="${src ? `background-image:url(${src})` : ''}"></span><div style="min-width:0"><h2>${esc(p.name)}</h2><div class="st">${p.strain ? 'גנטיקה: ' + esc(p.strain) + ' · ' : ''}${esc(p.marketer)}</div>
+        <div class="phero"><span class="im" style="${src ? `background-image:url(${src})` : ''}"></span><div style="min-width:0"><h2>${esc(p.name)}</h2><div class="st">${p.en ? `<span dir="ltr">${esc(p.en)}</span> · ` : ''}${p.strain ? 'גנטיקה: ' + esc(p.strain) + ' · ' : ''}${esc(p.marketer)}</div>
           <div class="meta"><span class="tp tp-${p.type}">${TYPE[p.type] || ''}</span><span class="thc num" dir="ltr">${prof(p)}</span><span class="lvl">${pot(p)}</span>${isNew(p) ? '<span class="tag tag-new">חדש</span>' : ''}${isBack(p) ? '<span class="tag tag-new">חזר למלאי</span>' : ''}</div>
           ${(p.tags || []).length ? `<div class="ptags" style="margin-top:8px">${p.tags.map(t => `<span>${esc(t)}</span>`).join('')}</div>` : ''}</div></div>
         <div class="pricebox"><span class="now num ${onSale ? 's' : ''}">${nis(p.sale ?? p.price)}</span>${onSale ? `<del class="num">${nis(p.price)}</del><span class="tag tag-sale">חיסכון ${nis(p.price - p.sale)}</span>` : ''}${p.deals.map(d => `<span class="tag tag-deal">${ico('gift')}${esc(d)}</span>`).join('')}</div>
         ${rv ? reviewHTML(rv.p, rv.date) + partners() : ''}
-        <dl class="specs"><div><dt>סוג</dt><dd>${TYPE[p.type] || '–'}</dd></div><div><dt>קטגוריה</dt><dd>${CAT[p.cat]}</dd></div><div><dt>THC</dt><dd class="num">${p.thc ?? '–'}%</dd></div><div><dt>CBD</dt><dd class="num">${p.cbd ?? '–'}%</dd></div><div><dt>חברה</dt><dd>${esc(p.marketer)}</dd></div><div><dt>זמינות</dt><dd>${st}</dd></div></dl>
+        <dl class="specs"><div><dt>סוג</dt><dd>${TYPE[p.type] || '–'}</dd></div><div><dt>קטגוריה</dt><dd>${CAT[p.cat]}</dd></div><div><dt>THC</dt><dd class="num">${p.thc ?? '–'}%</dd></div><div><dt>CBD</dt><dd class="num">${p.cbd ?? '–'}%</dd></div><div><dt>חברה</dt><dd>${esc(p.marketer || '–')}</dd></div><div><dt>זמינות</dt><dd>${st}</dd></div></dl>
         ${same ? `<button class="linkbtn" type="button" data-samemk="${esc(p.marketer)}">עוד ${same} מוצרים של ${esc(p.marketer)}</button>` : ''}
         <p class="legal">המידע אינו מהווה המלצה רפואית. יש להתייעץ עם רוקח לפני הרכישה. מבצעים עד גמר המלאי. להזמנות: <span class="num" dir="ltr">${esc(S.settings.phone)}</span></p>
       </div></div>`, p.name);

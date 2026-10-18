@@ -430,6 +430,10 @@ td .nm{font-weight:700;color:var(--brand)}
 .steps p{margin:0 0 8px;color:var(--ink-2);font-size:14px}
 
 a.btn{text-decoration:none}
+.chk{display:flex;flex-direction:column;gap:4px;padding:12px 16px;margin-bottom:6px}
+.chk span{font-size:13px;opacity:.85}
+.chk label{display:flex;gap:8px;align-items:center;margin-top:6px;font-weight:700;cursor:pointer}
+.chk-ok{background:var(--ok-bg);color:var(--ok-ink)}.chk-warn{background:var(--warn-bg);color:var(--warn-ink)}.chk-bad{background:var(--bad-bg);color:var(--bad-ink)}
 
 
 body{margin:0}img{max-width:100%}
