@@ -102,9 +102,10 @@
   }
   const range = l => { const ps = l.map(p => p.sale ?? p.price); const a = Math.min(...ps), b = Math.max(...ps); return a === b ? nis(a) : `${nis(a)}–${nis(b)}` };
   let secs = [];
-  const section = (icon, title, sub, l) => { const i = secs.length, c = S.col.has(title); secs.push([title, l.length]);
-    return `<div class="sec${c ? ' closed' : ''}" id="sec${i}"><div class="sech" data-sec="${esc(title)}">${ico(icon)}<h2>${esc(title)}</h2><span class="num">${sub}</span><button class="chev" type="button" aria-expanded="${!c}" aria-label="${c ? 'פתיחת' : 'כיווץ'} הקבוצה ${esc(title)}"></button></div>${c ? '' : items(l, title)}</div>` };
-  const jumpBar = () => secs.length < 3 ? '' : `<nav class="jump" aria-label="קפיצה לקבוצה"><div class="scroll">${secs.map(([t, n], i) => `<button class="chip" type="button" data-jump="${i}">${esc(t.replace('ללא מבצע כמות · ', ''))} <span class="c num">${n}</span></button>`).join('')}</div><button class="linkbtn" type="button" data-colall>${S.col.size ? 'פתיחת הכל' : 'כיווץ הכל'}</button></nav>`;
+  const section = (icon, title, sub, l, kind) => { const i = secs.length, c = S.col.has(title); secs.push([title, l.length, kind]);
+    return `<div class="sec sk-${kind}${c ? ' closed' : ''}" id="sec${i}"><div class="sech" data-sec="${esc(title)}">${ico(icon)}<h2>${esc(title)}</h2><span class="num">${sub}</span><button class="chev" type="button" aria-expanded="${!c}" aria-label="${c ? 'פתיחת' : 'כיווץ'} הקבוצה ${esc(title)}"></button></div>${c ? '' : items(l, title)}</div>` };
+  const JL = { deals: ['gift', 'קפיצה למבצע'], company: ['shield', 'קפיצה לחברה'], type: ['flower', 'קפיצה לסוג'] };
+  const jumpBar = () => secs.length < 3 ? '' : `<nav class="jump j-${S.group}" aria-label="קפיצה לקבוצה"><b class="ll">${ico(JL[S.group][0])}<span>${JL[S.group][1]}</span></b><div class="scroll">${secs.map(([t, n, k], i) => `<button class="chip jk-${k}" type="button" data-jump="${i}">${TYPE[k] ? `<i class="dot dot-${k}"></i>` : ''}${esc(t.replace('ללא מבצע כמות · ', ''))} <span class="c num">${n}</span></button>`).join('')}</div><button class="linkbtn" type="button" data-colall>${S.col.size ? 'פתיחת הכל' : 'כיווץ הכל'}</button></nav>`;
   function grouped(list) {
     const srt = l => [...l].sort(SORTS[S.sort][1]);
     secs = [];
@@ -112,19 +113,19 @@
     let out = '';
     if (S.group === 'company') {
       const m = new Map(); list.forEach(p => { if (!m.has(p.marketer)) m.set(p.marketer, []); m.get(p.marketer).push(p) });
-      [...m].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0], 'he')).forEach(([k, l]) => out += section('shield', k, `${l.length} מוצרים · ${range(l)}`, srt(l))); return out;
+      [...m].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0], 'he')).forEach(([k, l]) => out += section('shield', k, `${l.length} מוצרים · ${range(l)}`, srt(l), 'co')); return out;
     }
     const seen = new Set();
     if (S.group === 'deals') {
       const ds = [...new Set(list.flatMap(p => p.deals))].sort((a, b) => { const ia = S.deals.indexOf(a), ib = S.deals.indexOf(b); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) });
       for (const d of ds) {
         const l = list.filter(p => p.deals.includes(d) && !seen.has(p.id)); if (!l.length) continue; l.forEach(p => seen.add(p.id));
-        out += section('gift', d, `${l.length} מוצרים${d.startsWith('קנה 7') ? ' · הזול מביניהם במתנה' : ''}${/^\d|זוג/.test(d) ? ' · אפשר לשלב בין המוצרים בקבוצה' : ''}`, srt(l));
+        out += section('gift', d, `${l.length} מוצרים${d.startsWith('קנה 7') ? ' · הזול מביניהם במתנה' : ''}${/^\d|זוג/.test(d) ? ' · אפשר לשלב בין המוצרים בקבוצה' : ''}`, srt(l), 'deal');
       }
     }
     for (const c of ['flower', 'oil', 'preroll']) for (const t of ['indica', 'sativa', 'hybrid']) {
       const l = list.filter(p => !seen.has(p.id) && p.cat === c && p.type === t); if (!l.length) continue;
-      out += section(c, (S.group === 'deals' && seen.size ? 'ללא מבצע כמות · ' : '') + `${CAT[c]} · ${TYPE[t]}`, `${l.length} מוצרים · ${range(l)}`, srt(l));
+      out += section(c, (S.group === 'deals' && seen.size ? 'ללא מבצע כמות · ' : '') + `${CAT[c]} · ${TYPE[t]}`, `${l.length} מוצרים · ${range(l)}`, srt(l), t);
     }
     return out;
   }
@@ -133,7 +134,7 @@
   function quick(base) {
     const n = k => { const o = S.f[k]; S.f[k] = true; const c = apply(base).length; S.f[k] = o; return c };
     const h = QUICK.map(([k, l, i]) => [k, l, i, n(k)]).filter(x => x[3] || S.f[x[0]]);
-    return h.length ? `<span class="qsep" aria-hidden="true"></span>${h.map(([k, l, i, c]) => `<button class="chip qf" type="button" data-qf="${k}" aria-pressed="${!!S.f[k]}">${ico(i)}${l} <span class="c num">${c}</span></button>`).join('')}` : '';
+    return h.length ? `${h.map(([k, l, i, c]) => `<button class="chip qf" type="button" data-qf="${k}" aria-pressed="${!!S.f[k]}">${ico(i)}${l} <span class="c num">${c}</span></button>`).join('')}` : '';
   }
   function renderMenu() {
     const base = visible(), list = apply(base), f = S.f;
@@ -157,23 +158,27 @@
         <aside class="filters" aria-label="סינון">${filtersHTML()}</aside>
         <section style="min-width:0">
           ${S.rx ? `<div class="rx">${ico('shield')}<span>מוצגים רק מוצרים בקטגוריה <b class="num" dir="ltr">${S.rx}</b> שבמרשם שלך (<span class="num">${rxN}</span>)</span><button class="linkbtn" type="button" data-rx="change">שינוי</button><button class="linkbtn" type="button" data-rx="clear">הצגת כל המוצרים</button></div>` : ''}
-          <div class="cats" role="group" aria-label="קטגוריה וסינון מהיר">${['all', 'flower', 'oil', 'preroll'].filter(k => k === 'all' || cN(k)).map(k => `<button class="chip" type="button" data-cat="${k}" aria-pressed="${f.cat === k}">${k === 'all' ? 'הכל' : CAT[k]} <span class="c num">${cN(k)}</span></button>`).join('')}${quick(base)}</div>
-          <div class="cobar"><b>חברה:</b><div class="scroll" role="group" aria-label="חברה">
+          <div class="fpanel">
+          <div class="lane lane-cat"><b class="ll">${ico('grid')}<span>קטגוריה</span></b><div class="scroll" role="group" aria-label="קטגוריה">${['all', 'flower', 'oil', 'preroll'].filter(k => k === 'all' || cN(k)).map(k => `<button class="chip" type="button" data-cat="${k}" aria-pressed="${f.cat === k}">${k === 'all' ? 'הכל' : CAT[k]} <span class="c num">${cN(k)}</span></button>`).join('')}</div></div>
+          ${(qh => qh ? `<div class="lane lane-q"><b class="ll">${ico('star')}<span>סינון מהיר</span></b><div class="scroll" role="group" aria-label="סינון מהיר">${qh}</div></div>` : '')(quick(base))}
+          <div class="lane lane-co"><b class="ll">${ico('shield')}<span>חברה</span></b><div class="scroll" role="group" aria-label="חברה">
             <button class="chip" type="button" data-mkall aria-pressed="${!f.mk.length}">כל החברות</button>
             ${companies().map(([m]) => `<button class="chip" type="button" data-f="mk" data-v="${esc(m)}" aria-pressed="${f.mk.includes(m)}">${esc(m)} <span class="c num">${mN(m)}</span></button>`).join('')}</div></div>
           <div class="tools">
             <label class="search">${ico('search')}<span class="sr">חיפוש</span><input id="q" type="search" placeholder="חיפוש בעברית או באנגלית: שם, זן, חברה..." value="${esc(f.q)}" autocomplete="off"></label>
             <button class="fbtn" type="button" id="openF">${ico('filter')}סינון${activeCount() ? `<span class="n num">${activeCount()}</span>` : ''}</button>
-            <select class="sel" id="sort" aria-label="מיון">${Object.entries(SORTS).map(([k, [l]]) => `<option value="${k}" ${S.sort === k ? 'selected' : ''}>מיון: ${l}</option>`).join('')}</select>
+            <select class="sel" id="sort" aria-label="מיון">${Object.entries(SORTS).map(([k, [l]]) => `<option value="${k}" ${S.sort === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
             <span class="seg vw" role="group" aria-label="תצוגה"><button type="button" data-view="cards" aria-pressed="${S.view === 'cards'}" title="כרטיסים">${ico('grid')}<span class="vl">כרטיסים</span></button><button type="button" data-view="list" aria-pressed="${S.view === 'list'}" title="רשימה צפופה">${ico('rows')}<span class="vl">רשימה</span></button></span>
             <span class="seg" role="group" aria-label="קיבוץ">${Object.entries(GROUPS).map(([k, [l, i]]) => `<button type="button" data-group="${k}" aria-pressed="${S.group === k}">${ico(i)}${l}</button>`).join('')}</span>
           </div>
-          ${chips.length ? `<div class="active">${chips.map(([k, v, l]) => `<button class="chip" type="button" data-rm="${k}" data-v="${esc(v)}">${esc(l)} ${ico('close')}</button>`).join('')}</div>` : ''}
-          <div class="count" aria-live="polite"><b class="num">${list.length}</b> מוצרים · <span class="sorthint">${GROUPS[S.group][0]}, ובכל קבוצה ${SORTS[S.sort][0].replace(':', '')}</span></div>
+          </div>
+          ${chips.length ? `<div class="active">${chips.map(([k, v, l]) => `<button class="chip ac-${k}" type="button" data-rm="${k}" data-v="${esc(v)}">${esc(l)} ${ico('close')}</button>`).join('')}</div>` : ''}
+          <div class="count" aria-live="polite"><b class="num">${list.length}</b> מוצרים · <span class="sorthint">${GROUPS[S.group][0]}, ובכל קבוצה ${SORTS[S.sort][0].replace(':', '')}</span><span class="legend" aria-hidden="true">${['indica', 'sativa', 'hybrid'].map(t => `<i class="dot dot-${t}"></i>${TYPE[t]}`).join('')}</span></div>
           ${list.length ? (h => jumpBar() + h)(grouped(list)) : `<div class="empty"><b>לא נמצאו מוצרים</b>נסו להסיר חלק מהסינונים או לחפש מילה אחרת.<br><br><button class="btn btn-sm btn-2" type="button" data-clear>ניקוי הסינונים</button></div>`}
         </section>
       </div>
     </div>`;
+    $$('.lane .scroll').forEach(sc => { const on = sc.querySelector('[aria-pressed="true"]'); if (!on || on === sc.firstElementChild) return; const r = on.getBoundingClientRect(), R = sc.getBoundingClientRect(); if (r.left < R.left || r.right > R.right) sc.scrollLeft += (r.left + r.width / 2) - (R.left + R.width / 2) });
   }
 
   function sheet(inner, label) {
