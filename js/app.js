@@ -105,9 +105,11 @@
   const section = (icon, title, sub, l, kind, note) => { const i = secs.length, c = S.col.has(title); secs.push([title, l.length, kind]);
     return `<div class="sec sk-${kind}${c ? ' closed' : ''}" id="sec${i}"><div class="sech" data-sec="${esc(title)}">${ico(icon)}<h2>${esc(title)}</h2><span class="num">${sub}</span>${note ? `<span class="dn num">${esc(note)}</span>` : ''}<button class="chev" type="button" aria-expanded="${!c}" aria-label="${c ? 'פתיחת' : 'כיווץ'} הקבוצה ${esc(title)}"></button></div>${c ? '' : items(l, title)}</div>` };
   const JL = { deals: ['gift', 'קפיצה למבצע'], company: ['shield', 'קפיצה לחברה'], type: ['flower', 'קפיצה לסוג'] };
-  const jumpBar = () => secs.length < 3 ? '' : `<nav class="jump j-${S.group}" aria-label="קפיצה לקבוצה"><b class="ll">${ico(JL[S.group][0])}<span>${JL[S.group][1]}</span></b><div class="scroll">${secs.map(([t, n, k], i) => `<button class="chip jk-${k}" type="button" data-jump="${i}">${TYPE[k] ? `<i class="dot dot-${k}"></i>` : ''}${esc(t.replace('ללא מבצע כמות · ', ''))} <span class="c num">${n}</span></button>`).join('')}</div><button class="linkbtn" type="button" data-colall>${S.col.size ? 'פתיחת הכל' : 'כיווץ הכל'}</button></nav>`;
+  const jumpBar = () => secs.length < 3 ? '' : `<nav class="jump j-${S.group}" aria-label="קפיצה לקבוצה"><b class="ll">${ico(JL[S.group][0])}<span>${JL[S.group][1]}</span></b><div class="scroll">${secs.map(([t, n, k], i) => `<button class="chip jk-${k}" type="button" data-jump="${i}">${TYPE[k] ? `<i class="dot dot-${k}"></i>` : ''}${esc(t)} <span class="c num">${n}</span></button>`).join('')}</div><button class="linkbtn" type="button" data-colall>${S.col.size ? 'פתיחת הכל' : 'כיווץ הכל'}</button></nav>`;
   function grouped(list) {
-    const srt = l => [...l].sort(SORTS[S.sort][1]);
+    /* the dose (THC/CBD ratio) always comes first, then the chosen sort. Choosing CBD is itself a dose order, so it leads */
+    const byDose = (a, b) => (b.thc ?? -1) - (a.thc ?? -1) || (a.cbd ?? 99) - (b.cbd ?? 99);
+    const srt = l => [...l].sort(S.sort === 'cbd' ? (a, b) => SORTS.cbd[1](a, b) || byDose(a, b) : (a, b) => byDose(a, b) || SORTS[S.sort][1](a, b));
     secs = [];
     if (S.group === 'none') return items(srt(list));
     let out = '';
@@ -125,7 +127,7 @@
     }
     for (const c of ['flower', 'oil', 'preroll']) for (const t of ['indica', 'sativa', 'hybrid']) {
       const l = list.filter(p => !seen.has(p.id) && p.cat === c && p.type === t); if (!l.length) continue;
-      out += section(c, (S.group === 'deals' && seen.size ? 'ללא מבצע כמות · ' : '') + `${CAT[c]} · ${TYPE[t]}`, `${l.length} מוצרים · ${range(l)}`, srt(l), t);
+      out += section(c, `${CAT[c]} · ${TYPE[t]}`,`${l.length} מוצרים · ${range(l)}`, srt(l), t);
     }
     return out;
   }
@@ -182,7 +184,7 @@
           </div>
           </div>
           ${chips.length || f.q ? `<div class="active">${chips.map(([k, v, l]) => `<button class="chip ac-${k}" type="button" data-rm="${k}" data-v="${esc(v)}">${esc(l)} ${ico('close')}</button>`).join('')}${chips.length + !!f.q > 1 || (f.q && !chips.length) ? `<button class="clearall" type="button" data-clear>${ico('close')}ניקוי הכל</button>` : ''}</div>` : ''}
-          <div class="count" aria-live="polite"><b class="num">${list.length}</b> מוצרים · <span class="sorthint">${GROUPS[S.group][0]}, ובכל קבוצה ${SORTS[S.sort][0].replace(':', '')}</span><span class="legend" aria-hidden="true">${['indica', 'sativa', 'hybrid'].map(t => `<i class="dot dot-${t}"></i>${TYPE[t]}`).join('')}</span></div>
+          <div class="count" aria-live="polite"><b class="num">${list.length}</b> מוצרים · <span class="sorthint">${GROUPS[S.group][0]}, ובכל קבוצה ${S.sort === 'thc' || S.sort === 'cbd' ? '' : 'לפי מינון, ואז '}${SORTS[S.sort][0].replace(':', '')}</span><span class="legend" aria-hidden="true">${['indica', 'sativa', 'hybrid'].map(t => `<i class="dot dot-${t}"></i>${TYPE[t]}`).join('')}</span></div>
           ${list.length ? (h => jumpBar() + h)(grouped(list)) : `<div class="empty"><b>לא נמצאו מוצרים</b>נסו להסיר חלק מהסינונים או לחפש מילה אחרת.<br><br><button class="btn btn-sm btn-2" type="button" data-clear>ניקוי הסינונים</button></div>`}
         </section>
       </div>
@@ -201,7 +203,7 @@
   function mshow() { const m = $('#mbar'), fp = $('.fpanel'); if (!m) return; const on = !!fp && fp.getBoundingClientRect().bottom < 0 && /^#?(menu)?$/.test(location.hash.replace(/^#$/, '')) && !$('#layer').innerHTML; m.classList.toggle('on', on) }
   addEventListener('scroll', () => requestAnimationFrame(mshow), { passive: true });
   function jumpSheet() {
-    sheet(`<div style="padding:20px 20px 24px"><h2 style="margin:0 0 12px;font-size:18px">קפיצה ל${S.group === 'company' ? 'חברה' : S.group === 'deals' ? 'מבצע' : 'קבוצה'}</h2><div class="jlist">${secs.map(([t, n, k], i) => `<button type="button" class="chip jk-${k}" data-jump="${i}">${TYPE[k] ? `<i class="dot dot-${k}"></i>` : ''}${esc(t.replace('ללא מבצע כמות · ', ''))} <span class="c num">${n}</span></button>`).join('')}</div></div>`, 'קפיצה לקבוצה');
+    sheet(`<div style="padding:20px 20px 24px"><h2 style="margin:0 0 12px;font-size:18px">קפיצה ל${S.group === 'company' ? 'חברה' : S.group === 'deals' ? 'מבצע' : 'קבוצה'}</h2><div class="jlist">${secs.map(([t, n, k], i) => `<button type="button" class="chip jk-${k}" data-jump="${i}">${TYPE[k] ? `<i class="dot dot-${k}"></i>` : ''}${esc(t)} <span class="c num">${n}</span></button>`).join('')}</div></div>`, 'קפיצה לקבוצה');
     $('#layer .dlg').classList.add('dlg-sm');
   }
   function sheet(inner, label) {
